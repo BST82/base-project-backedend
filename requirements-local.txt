@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+sqlalchemy
+greenlet
+aiosqlite
+psycopg[binary]
+aiofiles
+python-multipart
+passlib
+bcrypt
+python-jose
+httpx
