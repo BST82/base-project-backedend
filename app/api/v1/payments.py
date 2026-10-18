@@ -77,7 +77,7 @@ async def create_payment_order(
 async def verify_payment(
     verify_in: PaymentVerifyRequest,
     db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis)
+    redis: Any = Depends(get_redis)
 ):
     """
     Verifies payment signature / payment ID and transitions reservation to CONFIRMED.
@@ -131,7 +131,7 @@ async def razorpay_webhook(
     request: Request,
     x_razorpay_signature: str = Header(None),
     db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis)
+    redis: Any = Depends(get_redis)
 ):
     """Idempotent webhook handler for Razorpay asynchronous payment events."""
     body = await request.body()

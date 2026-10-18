@@ -62,7 +62,7 @@ async def check_available_slots(
     date_val: date = Query(..., alias="date"),
     guests: int = Query(..., gt=0),
     db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis)
+    redis: Any = Depends(get_redis)
 ):
     """
     Evaluates available tables for the requested date and party size,
@@ -130,7 +130,7 @@ async def check_available_slots(
 async def hold_slot(
     hold_in: ReservationHoldRequest,
     db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis)
+    redis: Any = Depends(get_redis)
 ):
     """
     Locks a table slot for 10 minutes in Redis while the customer completes checkout.
@@ -194,7 +194,7 @@ async def hold_slot(
 async def create_booking(
     booking_in: ReservationCreate,
     db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis),
+    redis: Any = Depends(get_redis),
     current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     """
