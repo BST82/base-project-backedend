@@ -30,7 +30,8 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/home/appuser/.local/bin:$PATH"
+    PORT=8000 \
+    PATH="/home/appuser/.local/bin:/usr/local/bin:$PATH"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
@@ -47,7 +48,12 @@ RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.t
 
 COPY --chown=appuser:appgroup . /app
 
+# Ensure uploads directory is owned by appuser
+RUN mkdir -p /app/uploads && chown -R appuser:appgroup /app/uploads
+
 USER appuser
 
+EXPOSE 8000
+
 # Run single worker bound dynamically to Render's $PORT (fallback to 8000 locally)
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips '*'"]
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips '*'"]

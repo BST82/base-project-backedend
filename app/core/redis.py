@@ -49,17 +49,34 @@ class InMemoryRedis:
 
 
 _in_memory_instance = InMemoryRedis()
+_redis_available: Optional[bool] = None
+_last_redis_attempt: float = 0.0
 
 
 async def get_redis_client():
+    global _redis_available, _last_redis_attempt
+    now = time.time()
+
+    # If Redis was checked and unavailable within the last 30 seconds, return in-memory directly
+    if _redis_available is False and (now - _last_redis_attempt) < 30.0:
+        return _in_memory_instance
+
     try:
         import redis.asyncio as aioredis
-        client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
-        # Test connection with 500ms timeout
+        client = aioredis.from_url(
+            settings.REDIS_URL,
+            decode_responses=True,
+            socket_connect_timeout=0.5,
+            socket_timeout=0.5,
+        )
         await client.ping()
+        _redis_available = True
+        _last_redis_attempt = now
         return client
-    except (ImportError, Exception):
-        # Fall back to in-memory store for local running without Redis
+    except Exception:
+        _redis_available = False
+        _last_redis_attempt = now
+        # Fall back to high-performance in-memory store for environments without a Redis instance
         return _in_memory_instance
 
 
@@ -68,7 +85,12 @@ async def get_redis() -> AsyncGenerator[Any, None]:
     try:
         yield client
     finally:
-        await client.aclose()
+        if client is not _in_memory_instance:
+            try:
+                await client.aclose()
+            except Exception:
+                pass
+
 
 
 class SlotLockManager:

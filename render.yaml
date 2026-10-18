@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: restaurant-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL
+        value: postgresql://postgres:9flG9GDbl4HlCTVf@db.wakrdqdxtyzxbplxfibc.supabase.co:5432/postgres
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true

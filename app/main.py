@@ -10,7 +10,7 @@ from app.core.database import AsyncSessionLocal
 from app.db.init_db import init_database, seed_initial_data
 from app.api.v1 import api_router
 
-UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "uploads"))
+UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads"))
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
@@ -38,10 +38,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS Middleware
+# CORS Middleware (allows local dev, Render, Vercel, Netlify, and custom domains with credentials)
+cors_origins = settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else []
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else ["*"],
+    allow_origins=cors_origins,
+    allow_origin_regex=r"^https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -9,15 +9,25 @@ db_url = settings.DATABASE_URL.strip()
 # Clean accidental brackets around password (e.g., :[password]@ -> :password@)
 db_url = re.sub(r":\[([^\]]+)\]@", r":\1@", db_url)
 
+# Normalize PostgreSQL scheme to SQLAlchemy 2.0 async dialect
 if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql+psycopg_async://", 1)
+    db_url = "postgresql+psycopg://" + db_url[len("postgres://"):]
 elif db_url.startswith("postgresql://"):
-    db_url = db_url.replace("postgresql://", "postgresql+psycopg_async://", 1)
+    db_url = "postgresql+psycopg://" + db_url[len("postgresql://"):]
+elif db_url.startswith("postgresql+psycopg_async://"):
+    db_url = "postgresql+psycopg://" + db_url[len("postgresql+psycopg_async://"):]
 
-# Ensure SSL is enforced for cloud-hosted Supabase instances
-if "supabase.co" in db_url and "sslmode=" not in db_url:
-    separator = "&" if "?" in db_url else "?"
-    db_url = f"{db_url}{separator}sslmode=require"
+# Ensure SSL is enforced for cloud-hosted database providers (Supabase, Render, Neon)
+is_cloud_db = any(host in db_url for host in ("supabase.co", "render.com", "neon.tech", "pooler.supabase.com"))
+if is_cloud_db:
+    if "asyncpg" in db_url:
+        if "ssl=" not in db_url and "sslmode=" not in db_url:
+            separator = "&" if "?" in db_url else "?"
+            db_url = f"{db_url}{separator}ssl=require"
+    else:
+        if "sslmode=" not in db_url and "ssl=" not in db_url:
+            separator = "&" if "?" in db_url else "?"
+            db_url = f"{db_url}{separator}sslmode=require"
 
 if "sqlite" in db_url:
     engine = create_async_engine(
@@ -31,8 +41,8 @@ else:
         echo=False,
         future=True,
         pool_pre_ping=True,
-        pool_size=10,
-        max_overflow=20,
+        pool_size=5,
+        max_overflow=10,
     )
 
 AsyncSessionLocal = async_sessionmaker(
